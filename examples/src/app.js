@@ -10,35 +10,36 @@ import ExampleDynamicLoading from './ExampleDynamicLoading';
 class App extends React.Component {
   constructor() {
     super();
-    this.state = { width: -1 };
+    this.state = {
+      width: -1,
+      page: 1,
+    };
     this.loadPhotos = this.loadPhotos.bind(this);
   }
   componentDidMount() {
     this.loadPhotos();
   }
   loadPhotos() {
-
     const urlParams = {
-      api_key: '372ef3a005d9b9df062b8240c326254d',
-      photoset_id: '72157680705961676',
-      user_id: '57933175@N08',
+      api_key: 'ef9fdf4080f1a6bb8ad38cd75c5da58d',
+      user_id: '159129548@N03',
       format: 'json',
       per_page: '24',
+      page: this.state.page,
       extras: 'url_m,url_c,url_l,url_h,url_o',
     };
-
-    let url = 'https://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos';
+    let url = 'https://api.flickr.com/services/rest/?method=flickr.photos.getRecent';
     url = Object.keys(urlParams).reduce((acc, item) => {
       return acc + '&' + item + '=' + urlParams[item];
     }, url);
-
+    console.log(url);
     jsonp(url, { name: 'jsonFlickrApi' }, (err, data) => {
-      let photos = data.photoset.photo.map(item => {
+      let photos = data.photos.photo.map(item => {
         let aspectRatio = parseFloat(item.width_o / item.height_o);
         return {
           src: aspectRatio >= 3 ? item.url_c : item.url_m,
-          width: parseInt(item.width_o),
-          height: parseInt(item.height_o),
+          width: parseInt(item.width_m),
+          height: parseInt(item.height_m),
           title: item.title,
           alt: item.title,
           srcSet: [
@@ -52,40 +53,37 @@ class App extends React.Component {
       });
       this.setState({
         photos: this.state.photos ? this.state.photos.concat(photos) : photos,
+        page: this.state.page + 1,
       });
     });
-
   }
 
   render() {
     if (this.state.photos) {
       const width = this.state.width;
       return (
-        <Measure bounds onResize={(contentRect) => this.setState({ width: contentRect.bounds.width })}>
-        {
-          ({ measureRef }) => {
-            if (width < 1 ){
-              return <div ref={measureRef}></div>;
+        <Measure bounds onResize={contentRect => this.setState({ width: contentRect.bounds.width })}>
+          {({ measureRef }) => {
+            if (width < 1) {
+              return <div ref={measureRef} />;
             }
-					  let columns = 1;
-					  if (width >= 480){
-						  columns = 2;
-					  }
-					  if (width >= 1024){
-						  columns = 3;
-					  }
-					  if (width >= 1824){
-						  columns = 4;
-					  }
-            return <div ref={measureRef} className="App">
-                <ExampleBasic columns={columns} photos={this.state.photos.slice(0,6)} />
-                <ExampleWithLightbox columns={columns} photos={this.state.photos.slice(6,12)} />
-                <ExampleCustomComponentSelection columns={columns} photos={this.state.photos.slice(12,18)} />
-                <ExampleDynamicLoading columns={columns} photos={this.state.photos} />
+            let columns = 1;
+            if (width >= 480) {
+              columns = 2;
+            }
+            if (width >= 1024) {
+              columns = 3;
+            }
+            if (width >= 1824) {
+              columns = 4;
+            }
+            return (
+              <div ref={measureRef} className="App">
+                <ExampleDynamicLoading columns={columns} photos={this.state.photos} loadNextPage={this.loadPhotos} />
               </div>
-          }
-        }
-		    </Measure>
+            );
+          }}
+        </Measure>
       );
     } else {
       return (
